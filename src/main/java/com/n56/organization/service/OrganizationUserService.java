@@ -9,9 +9,9 @@ import com.n56.organization.response.OrganizationUserResponse;
 
 @Service
 public interface OrganizationUserService {
-	
+
 	BaseResponse saveOrganizationUserData(OrganizationUserRequest organizationUserRequest, Integer organizationUserId);
-	
+
 	OrganizationUser findOrganizationUserById(Integer organizationUserId);
 
 	BaseResponse deleteOrganizationUserData(Integer organizationUserId);

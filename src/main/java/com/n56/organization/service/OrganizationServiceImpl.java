@@ -34,11 +34,13 @@ public class OrganizationServiceImpl implements OrganizationService {
 	@Override
 	public void saveOrganizationData(OrganizationRequest organizationRequest, Integer organizationId) {
 		LOGGER.info("Entry: saveOrganizationData :: OrganizationServiceImpl");
-		if(Objects.nonNull(organizationRequest)) {
+		if (Objects.nonNull(organizationRequest) && Objects.nonNull(organizationId)) {
 			if (!organizationCode(organizationRequest.getOrganizationCode(), organizationId)) {
-				throw new OrganizationDuplicationDataException(StatusEnum.NOT_FOUND, "Organization Code Already Exists");
+				throw new OrganizationDuplicationDataException(StatusEnum.NOT_FOUND,
+						"Organization Code Already Exists");
 			}
-			Organization organization = organizationRepository.findByOrganizationCode(organizationRequest.getOrganizationCode());
+			Organization organization = organizationRepository
+					.findByOrganizationCode(organizationRequest.getOrganizationCode());
 			if (organization == null) {
 				organization = new Organization();
 				organization.setCreatedBy(1);
@@ -48,16 +50,18 @@ public class OrganizationServiceImpl implements OrganizationService {
 				organization.setAddressLine2(organizationRequest.getOrganizationAddressLine2());
 				organization.setAddressLine3(organizationRequest.getOrganizationAddressLine3());
 				organization.setCity(organizationRequest.getOrganizationCity());
-				organization.setCountry(countryService.findCountryById(organizationRequest.getOrganizationCountryId())	);
+				organization.setCountry(countryService.findCountryById(organizationRequest.getOrganizationCountryId()));
 				organizationRepository.save(organization);
 			} else {
-				throw new OrganizationDuplicationDataException(StatusEnum.NOT_FOUND, "Organization Data Already Existss");
+				throw new OrganizationDuplicationDataException(StatusEnum.NOT_FOUND,
+						"Organization Data Already Existss");
 			}
 		}
 	}
 
 	@Override
 	public BaseResponse updateOrganizaitonData(OrganizationRequest organizationRequest, Integer organizationId) {
+		LOGGER.info("Entry: updateOrganizaitonData :: OrganizationServiceImpl");
 		BaseResponse baseResponse = new BaseResponse();
 		if (Objects.nonNull(organizationRequest) && Objects.nonNull(organizationId)) {
 			Organization organization = null;
@@ -65,7 +69,8 @@ public class OrganizationServiceImpl implements OrganizationService {
 			if (!checkDuplicateData(organizationRequest.getOrganizationName(), organizationId)) {
 				throw new OrganizationDuplicationDataException(StatusEnum.NOT_FOUND, " Exists");
 			} else if (!organizationCode(organizationRequest.getOrganizationCode(), organizationId)) {
-				throw new OrganizationDuplicationDataException(StatusEnum.NOT_FOUND, "Organization Code Already Exists");
+				throw new OrganizationDuplicationDataException(StatusEnum.NOT_FOUND,
+						"Organization Code Already Exists");
 			}
 			optionalOrganization = organizationRepository.findById(organizationId);
 			if (!optionalOrganization.isEmpty()) {
@@ -86,7 +91,7 @@ public class OrganizationServiceImpl implements OrganizationService {
 			}
 		} else {
 			baseResponse.setStatus(StatusEnum.SUCCESS);
-			baseResponse.setMessage("organizationrequst and id null in update organization data");
+			baseResponse.setMessage("Organizationrequst and id null in update organization data");
 		}
 		return baseResponse;
 	}
@@ -94,7 +99,7 @@ public class OrganizationServiceImpl implements OrganizationService {
 	@Override
 	public BaseResponse deleteOrganizationData(Integer organizationId) {
 		LOGGER.debug("Entry: deleteOrganizationData :: OrganizationServiceImpl");
-		if(Objects.nonNull(organizationId)) {
+		if (Objects.nonNull(organizationId)) {
 			Optional<Organization> organization = organizationRepository.findById(organizationId);
 			if (!organization.isEmpty()) {
 				organizationRepository.delete(organization.get());
@@ -108,12 +113,12 @@ public class OrganizationServiceImpl implements OrganizationService {
 		} else {
 			throw new OrganizationDuplicationDataException(StatusEnum.NOT_FOUND, "Organization ID does Not Exist");
 		}
-	}	
-		
+	}
+
 	@Override
 	public OrganizationResponse getOrganizationDataById(Integer organizationId) {
 		LOGGER.debug("Entry: getOrganizationDataById :: OrganizationServiceImpl");
-		if(Objects.nonNull(organizationId)) {
+		if (Objects.nonNull(organizationId)) {
 			OrganizationResponse organizationResponse = new OrganizationResponse();
 			List<OrganizationCustomResponse> organizationResponsesList = new ArrayList<>();
 			Optional<Organization> orgResponse = organizationRepository.findById(organizationId);
@@ -175,7 +180,7 @@ public class OrganizationServiceImpl implements OrganizationService {
 		Organization organization = null;
 		if (Objects.nonNull(organizationId)) {
 			Optional<Organization> organizationOptionalData = organizationRepository.findById(organizationId);
-				organization = organizationOptionalData.get();
+			organization = organizationOptionalData.get();
 			LOGGER.info("Exit: findOrganizationById :: OrganizationServiceImpl");
 		} else {
 			LOGGER.info("OrganizationId is null in find organization by ID");
@@ -185,7 +190,7 @@ public class OrganizationServiceImpl implements OrganizationService {
 
 	public boolean checkDuplicateData(String organizationName, Integer organizationId) {
 		LOGGER.info("Entry: checkDuplicateData :: OrganizationServiceImpl");
-		if(Objects.nonNull(organizationName)) {
+		if (Objects.nonNull(organizationName)) {
 			boolean valid = false;
 			Organization organization = null;
 			if (Objects.nonNull(organizationId)) {
@@ -201,12 +206,12 @@ public class OrganizationServiceImpl implements OrganizationService {
 			return valid;
 		} else {
 			throw new OrganizationNotFoundException(StatusEnum.NOT_FOUND, "Does Not Exist");
-		}	
+		}
 	}
 
 	public boolean organizationCode(String organizationCode, Integer organizationId) {
 		LOGGER.info("Entry: checkDuplicateData :: OrganizationServiceImpl");
-		if(Objects.nonNull(organizationCode)) {
+		if (Objects.nonNull(organizationCode)) {
 			boolean valid = false;
 			Organization organization = null;
 			if (Objects.nonNull(organizationId)) {

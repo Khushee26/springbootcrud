@@ -12,6 +12,7 @@ import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.n56.organization.baseresponse.BaseResponse;
 import com.n56.organization.baseresponse.StatusEnum;
@@ -28,13 +29,14 @@ import com.n56.organization.response.OrganizationUserCustomResponse;
 import com.n56.organization.response.OrganizationUserResponse;
 
 import lombok.extern.slf4j.Slf4j;
+
 @Service
 @Slf4j
 public class OrganizationUserServiceImpl implements OrganizationUserService {
 
 	@Autowired
 	OrganizationUserRepository organizationUserRepository;
-	
+
 	@Autowired
 	MstUserRepository mstUserRepository;
 
@@ -42,208 +44,129 @@ public class OrganizationUserServiceImpl implements OrganizationUserService {
 	OrganizationService organizationService;
 
 	@Autowired
-	CountryService countryService;	
-	
-//	@Override
-//	public BaseResponse saveOrganizationUserData(@Valid  OrganizationUserRequest organizationUserRequest, Integer organizationUserId) {
-//		LOGGER.info("Entry: saveOrganizationUserData :: OrganizationUserServiceImpl");
-//		OrganizationUser organizationUser = null;
-//		if (!checkDuplicateEmail(organizationUserRequest.getOrganizationUserEmail(), organizationUserId)) {
-//			throw new OrganizationDuplicationDataException(StatusEnum.NOT_FOUND,"OrganizationUser Email Already Exists");
-//		}
-//		if (Objects.nonNull(organizationUser)) {
-//				System.out.println("OrganizationUser Already Exists");
-//		} else {
-//			MstUser mstUser = new MstUser();
-//			mstUser.setEmail(organizationUserRequest.getOrganizationUserEmail());
-//			mstUser.setPassword(organizationUserRequest.getOrganizationUserPassword());
-//			mstUser.setActive(true);
-//			mstUser = mstUserRepository.save(mstUser);
-//			organizationUser = new OrganizationUser();
-//			organizationUser.setCreatedBy(1);
-//			organizationUser.setMstUser(mstUser);
-//			organizationUser.setFirstName(organizationUserRequest.getFirstName());
-//			organizationUser.setLastName(organizationUserRequest.getLastName());
-//			organizationUser.setAddressLine1(organizationUserRequest.getAddressLine1());
-//			organizationUser.setAddressLine2(organizationUserRequest.getAddressLine2());
-//			organizationUser.setAddressLine3(organizationUserRequest.getAddressLine3());
-//			organizationUser.setCity(organizationUserRequest.getOrganizationUserCity());
-//		}
-//		Timestamp timestamp = Timestamp.from(Instant.now());
-//		organizationUser.setCreatedOn(timestamp);
-//		organizationUser.setUpdatedOn(timestamp);
-//
-//		Country country = countryService.findCountryById(organizationUserRequest.getCountryId());
-//		organizationUser.setCountry(country);
-//		organizationUser.setActive(true);
-//
-//		Organization organization = organizationService.findOrganizationById(organizationUserRequest.getOrganizationId());
-//		organizationUser.setOrganization(organization);
-//		organizationUserRepository.save(organizationUser);
-//		
-//		BaseResponse baseResponse = new BaseResponse();
-//		baseResponse.setStatus(StatusEnum.SUCCESS);
-//		baseResponse.setMessage( "Organizationuser data saved successfully ");
-//		return baseResponse;
-//	}
+	CountryService countryService;
+
+	@Transactional
 	@Override
-	public BaseResponse saveOrganizationUserData(OrganizationUserRequest organizationUserRequest, Integer organizationUserId) {		
-		LOGGER.info("Entry: saveOrganizationUserData :: OrganizationUserServiceImpl");	
-		Optional<OrganizationUser> optionalOrganizationUser = organizationUserRepository.findById(organizationUserRequest.getOrganizationId());
-		if(Objects.nonNull(organizationUserId)) {
+	public BaseResponse saveOrganizationUserData(OrganizationUserRequest organizationUserRequest,
+			Integer organizationUserId) {
+		LOGGER.info("Entry: saveOrganizationUserData :: OrganizationUserServiceImpl");
+		Optional<OrganizationUser> optionalOrganizationUser = null;
+		if (Objects.nonNull(organizationUserId)) {
+			optionalOrganizationUser = organizationUserRepository.findById(organizationUserRequest.getOrganizationId());
+		}
+		if (Objects.nonNull(organizationUserId) && Objects.nonNull(organizationUserRequest)) {
 			optionalOrganizationUser = organizationUserRepository.findById(organizationUserId);
 		}
 		OrganizationUser organizationUser = null;
-		if(optionalOrganizationUser != null && optionalOrganizationUser.isPresent()) {
-			//now have to make update 
-			organizationUser= optionalOrganizationUser.get();
-			MstUser mstUser = organizationUser.getMstUser();
-			mstUser.setActive(true);
-			mstUser.setEmail(organizationUserRequest.getOrganizationUserEmail());
-			mstUser.setPassword(organizationUserRequest.getOrganizationUserPassword());
-			mstUser = mstUserRepository.save(mstUser);
-			organizationUser.setMstUser(mstUser);
-				
-			Organization organization = organizationService.findOrganizationById(organizationUserRequest.getOrganizationId());
-			organizationUser.setOrganization(organization);
-			
-			Timestamp timestamp = Timestamp.from(Instant.now());
-			organizationUser.setCreatedOn(timestamp);
-			organizationUser.setUpdatedOn(timestamp);
-			
-			organizationUser.setAddressLine1(organizationUserRequest.getAddressLine1());
-			organizationUser.setAddressLine2(organizationUserRequest.getAddressLine2());
-			organizationUser.setAddressLine3(organizationUserRequest.getAddressLine3());
-			organizationUser.setCity(organizationUserRequest.getOrganizationUserCity());
-			organizationUser.setFirstName(organizationUserRequest.getFirstName());
-			organizationUser.setLastName(organizationUserRequest.getLastName());
-			organizationUser.setCreatedBy(1);
-			organizationUser.setActive(true);
-			Country country = countryService.findCountryById(organizationUserRequest.getCountryId());
-			organizationUser.setCountry(country);
-			System.out.println("upate code executed");
-			organizationUserRepository.save(organizationUser);
-						
-			BaseResponse baseResponse = new BaseResponse();
-			baseResponse.setStatus(StatusEnum.SUCCESS);
-			baseResponse.setMessage( "Organizationuser data updated successfully ");
-			return baseResponse;
-			
-		} else {// save code
+		MstUser mstUser = null;
+		BaseResponse baseResponse = new BaseResponse();
+		if (optionalOrganizationUser == null || optionalOrganizationUser.isEmpty() || organizationUserId == null) {
+			LOGGER.info("Entry: save	OrganizationUserData :: OrganizationUserServiceImpl");
+			// save code
 			System.out.println("save code executed");
-			MstUser mstUser = new MstUser();
-			mstUser.setEmail(organizationUserRequest.getOrganizationUserEmail());
-			mstUser.setPassword(organizationUserRequest.getOrganizationUserPassword());
-			mstUser.setActive(true);
-			mstUser = mstUserRepository.save(mstUser);
-			organizationUser= new OrganizationUser();
-			organizationUser.setMstUser(mstUser);
-			
-			organizationUser.setAddressLine1(organizationUserRequest.getAddressLine1());
-			organizationUser.setAddressLine2(organizationUserRequest.getAddressLine2());
-			organizationUser.setAddressLine3(organizationUserRequest.getAddressLine3());
-			organizationUser.setCity(organizationUserRequest.getOrganizationUserCity());
-			organizationUser.setFirstName(organizationUserRequest.getFirstName());
-			organizationUser.setLastName(organizationUserRequest.getLastName());
-			organizationUser.setCreatedBy(1);
-			organizationUser.setActive(true);
-			Country country = countryService.findCountryById(organizationUserRequest.getCountryId());
-			organizationUser.setCountry(country);
-			organizationUser.setActive(true);
-			
-			Organization organization = organizationService.findOrganizationById(organizationUserRequest.getOrganizationId());
-			organizationUser.setOrganization(organization);
-			
-			
-			Timestamp timestamp = Timestamp.from(Instant.now());
-			organizationUser.setCreatedOn(timestamp);
-			organizationUser.setUpdatedOn(timestamp);
-			organizationUserRepository.save(organizationUser);
-			BaseResponse baseResponse = new BaseResponse();
+			// exceptions here
+			if (!checkDuplicateEmail(organizationUserRequest.getOrganizationUserEmail(), organizationUserId)) {
+				throw new OrganizationDuplicationDataException(StatusEnum.NOT_FOUND,
+						"OrganizationUser Email Already Exists");
+			}
+			organizationUser = new OrganizationUser();
+			mstUser = new MstUser();
 			baseResponse.setStatus(StatusEnum.SUCCESS);
-			baseResponse.setMessage( "Organizationuser data saved successfully ");
-			return baseResponse;
-		}
-	}
+			baseResponse.setMessage("Organizationuser data saved successfully ");
 
-//	@Override
-//	public BaseResponse updateOrganizationUserData(OrganizationUserRequest organizationUserRequest, Integer organizationUserId) {
-//	LOGGER.info("Entry: updateOrganizationUserData :: OrganizationUserServiceImpl");
-//		if(!nonNull(organizationUserRequest)) {
-//			throw new OrganizationNotFoundException(StatusEnum.NOT_FOUND, "hi");
-//		}	
-//		OrganizationUser organizationUser = findOrganizationUserById(organizationUserId);
-//		organizationUser.getMstUser().setEmail(organizationUserRequest.getOrganizationUserEmail());
-//		organizationUser.getMstUser().setPassword(organizationUserRequest.getOrganizationUserPassword());
-//		organizationUser.setOrganization(organizationService.findOrganizationById(organizationUserRequest.getOrganizationId()));
-//		organizationUser.setFirstName(organizationUserRequest.getFirstName());
-//		organizationUser.setLastName(organizationUserRequest.getLastName());
-//		organizationUser.setAddressLine1(organizationUserRequest.getAddressLine1());
-//		organizationUser.setAddressLine2(organizationUserRequest.getAddressLine2());
-//		organizationUser.setAddressLine3(organizationUserRequest.getAddressLine3());
-//		organizationUser.setCity(organizationUserRequest.getOrganizationUserCity());
-//		organizationUser.setCountry(countryService.findCountryById(organizationUserRequest.getCountryId()));
-//		organizationUser.setUpdatedBy(1);
-//		organizationUser.setUpdatedOn(Timestamp.from(Instant.now()));
-//		organizationUser.setActive(true);
-//
-//		Timestamp timestamp = Timestamp.from(Instant.now());
-//		organizationUser.setCreatedOn(timestamp);
-//		organizationUser.setUpdatedOn(timestamp);
-//		organizationUserRepository.save(organizationUser);
-//		
-//		BaseResponse baseResponse = new BaseResponse();
-//		baseResponse.setStatus(StatusEnum.SUCCESS);
-//		baseResponse.setMessage("OrganizationUser Data Updated Successfully");
-//		return baseResponse;
-//	}
+		} else {
+			// update code
+			LOGGER.info("Entry: update	OrganizationUserData :: OrganizationUserServiceImpl");
+			organizationUser = optionalOrganizationUser.get(); // opt out
+			mstUser = organizationUser.getMstUser();
+
+			baseResponse.setStatus(StatusEnum.SUCCESS);
+			baseResponse.setMessage("Organizationuser data updated successfully ");
+			System.out.println("update code executed");
+		}
+		// common code
+		mstUser.setActive(true);
+		mstUser.setEmail(organizationUserRequest.getOrganizationUserEmail());
+		mstUser.setPassword(organizationUserRequest.getOrganizationUserPassword());
+		mstUser = mstUserRepository.save(mstUser);
+		organizationUser.setMstUser(mstUser);
+		Organization organization = organizationService
+				.findOrganizationById(organizationUserRequest.getOrganizationId());
+		organizationUser.setOrganization(organization);
+		Timestamp timestamp = Timestamp.from(Instant.now());
+		organizationUser.setCreatedOn(timestamp);
+		organizationUser.setUpdatedOn(timestamp);
+		organizationUser.setAddressLine1(organizationUserRequest.getAddressLine1());
+		organizationUser.setAddressLine2(organizationUserRequest.getAddressLine2());
+		organizationUser.setAddressLine3(organizationUserRequest.getAddressLine3());
+		organizationUser.setCity(organizationUserRequest.getOrganizationUserCity());
+		organizationUser.setFirstName(organizationUserRequest.getFirstName());
+		organizationUser.setLastName(organizationUserRequest.getLastName());
+		organizationUser.setCreatedBy(1);
+		organizationUser.setActive(true);
+		Country country = countryService.findCountryById(organizationUserRequest.getCountryId());
+		organizationUser.setCountry(country);
+		organizationUserRepository.save(organizationUser);
+		return baseResponse;
+		// common code ended
+	}
 
 	@Override
 	public BaseResponse deleteOrganizationUserData(Integer organizationUserId) {
-	LOGGER.info("Entry: deleteOrganizationUserData :: OrganizationUserServiceImpl");
-	if(Objects.nonNull(organizationUserId)) {
-			OrganizationUser organizationUser = findOrganizationUserById(organizationUserId); 
-			if(nonNull(organizationUser)) {
+		LOGGER.info("Entry: deleteOrganizationUserData :: OrganizationUserServiceImpl");
+		if (Objects.nonNull(organizationUserId)) {
+			OrganizationUser organizationUser = findOrganizationUserById(organizationUserId);
+			if (nonNull(organizationUser)) {
 				organizationUserRepository.delete(organizationUser);
 				mstUserRepository.delete(organizationUser.getMstUser());
 				BaseResponse baseResponse = new BaseResponse();
 				baseResponse.setMessage("OrganizationUser Deleted Succsessfully ");
 				baseResponse.setStatus(StatusEnum.SUCCESS);
 				LOGGER.debug("Exit: deleteOrganizationUserData :: OrganizationUserServiceImpl");
-				return baseResponse;		
+				return baseResponse;
 			} else {
-				throw new OrganizationDuplicationDataException(StatusEnum.NOT_FOUND, "OrganizationUser ID does Not Exist");
+				throw new OrganizationDuplicationDataException(StatusEnum.NOT_FOUND,
+						"OrganizationUser ID does Not Exist");
 			}
 		} else {
 			throw new OrganizationNotFoundException(StatusEnum.NOT_FOUND, "delete organization data");
-		}	
-	} 
-	
+		}
+	}
+
 	@Override
 	public OrganizationUserResponse getOrganizationUserDataById(Integer organizationUserId) {
-	LOGGER.debug("Entry: getOrganizationuserDataById :: OrganizationUserServiceImpl");
-		Optional<OrganizationUser> organizationUserOptional = organizationUserRepository.findById(organizationUserId);
-		OrganizationUser organizationUser = null;
-		OrganizationUserResponse organizationUserResponse = null;
-		if (organizationUserOptional.isPresent()) {
-			organizationUser = organizationUserOptional.get();
-			organizationUserResponse = new OrganizationUserResponse();
-			organizationUserResponse.setStatus(StatusEnum.SUCCESS);
-			organizationUserResponse.setMessage("OrganizationUser Fetched Successfully");
-			organizationUserResponse.setOrganizationUserResponsesList(Arrays.asList(setOrganizationUserCustomResponse(organizationUser)));
-		} else {			
-			throw new OrganizationNotFoundException(StatusEnum.NOT_FOUND, "Id Does Not Exist");
+		LOGGER.debug("Entry: getOrganizationuserDataById :: OrganizationUserServiceImpl");
+		if (Objects.nonNull(organizationUserId)) {
+			Optional<OrganizationUser> organizationUserOptional = organizationUserRepository
+					.findById(organizationUserId);
+			OrganizationUser organizationUser = null;
+			OrganizationUserResponse organizationUserResponse = null;
+			if (organizationUserOptional.isPresent()) {
+				organizationUser = organizationUserOptional.get();
+				organizationUserResponse = new OrganizationUserResponse();
+				organizationUserResponse.setStatus(StatusEnum.SUCCESS);
+				organizationUserResponse.setMessage("OrganizationUser Fetched Successfully");
+				organizationUserResponse.setOrganizationUserResponsesList(
+						Arrays.asList(setOrganizationUserCustomResponse(organizationUser)));
+				LOGGER.debug("Exit: findOrganizationUserById :: OrganizationUserServiceImpl");
+				return organizationUserResponse;
+			} else {
+				throw new OrganizationNotFoundException(StatusEnum.NOT_FOUND, "Id Does Not Exist");
+			}
+		} else {
+			throw new OrganizationNotFoundException(StatusEnum.NOT_FOUND, "Does Not Exist");
 		}
-	LOGGER.debug("Exit: findOrganizationUserById :: OrganizationUserServiceImpl");
-	return organizationUserResponse;
 	}
 
 	private OrganizationUserCustomResponse setOrganizationUserCustomResponse(OrganizationUser organizationUser) {
 		OrganizationUserCustomResponse organizationUserCustomResponse = null;
-		if(nonNull(organizationUser)) {
+		if (Objects.nonNull(organizationUser)) {
 			organizationUserCustomResponse = new OrganizationUserCustomResponse();
-			organizationUserCustomResponse.setOrganizationName(organizationUser.getOrganization().getOrganizationName());
-			organizationUserCustomResponse.setOrganizationCode(organizationUser.getOrganization().getOrganizationCode());
+			organizationUserCustomResponse
+					.setOrganizationName(organizationUser.getOrganization().getOrganizationName());
+			organizationUserCustomResponse
+					.setOrganizationCode(organizationUser.getOrganization().getOrganizationCode());
 			organizationUserCustomResponse.setEmail(organizationUser.getMstUser().getEmail());
 			organizationUserCustomResponse.setPassword(organizationUser.getMstUser().getPassword());
 			organizationUserCustomResponse.setFirstname(organizationUser.getFirstName());
@@ -257,24 +180,25 @@ public class OrganizationUserServiceImpl implements OrganizationUserService {
 		}
 		return organizationUserCustomResponse;
 	}
-	
+
 	@Override
 	public OrganizationUser findOrganizationUserById(Integer organizationUserId) {
-	LOGGER.info("Entry: findOrganizationUserById :: OrganizationUserServiceImpl");
-		Optional<OrganizationUser> organizationUserOptionalData = organizationUserRepository.findById(organizationUserId);
+		LOGGER.info("Entry: findOrganizationUserById :: OrganizationUserServiceImpl");
 		OrganizationUser organizationuser = null;
-		if (organizationUserOptionalData.isPresent()) {
+		if (Objects.nonNull(organizationUserId)) {
+			Optional<OrganizationUser> organizationUserOptionalData = organizationUserRepository
+					.findById(organizationUserId);
 			organizationuser = organizationUserOptionalData.get();
 		} else {
-			throw new OrganizationNotFoundException(StatusEnum.NOT_FOUND, "OrganizationUser Data Not Exist");
+			throw new OrganizationNotFoundException(StatusEnum.NOT_FOUND, "OrganizationUser Data Does Not Exist");
 		}
 		LOGGER.info("Exit: findOrganizationUserById :: OrganizationServiceImpl");
 		return organizationuser;
-	}	
-	
-	@Override	
+	}
+
+	@Override
 	public OrganizationUserResponse getOrganizationUserList() {
-	LOGGER.debug("Entry: getOrganizationUserInList :: OrganizationUserServiceImpl");
+		LOGGER.debug("Entry: getOrganizationUserInList :: OrganizationUserServiceImpl");
 		List<OrganizationUser> organizationUsers = organizationUserRepository.findAll();
 		OrganizationUserResponse organizationuserResponse = new OrganizationUserResponse();
 		List<OrganizationUserCustomResponse> listOrganizationResponses = new ArrayList<>();
@@ -299,13 +223,13 @@ public class OrganizationUserServiceImpl implements OrganizationUserService {
 			organizationuserResponse.setStatus(StatusEnum.SUCCESS);
 			organizationuserResponse.setMessage("OrganizationUser List Fetched Successfully");
 			return organizationuserResponse;
-		} else {			
+		} else {
 			throw new OrganizationNotFoundException(StatusEnum.NOT_FOUND, "This Does Not Exist");
 		}
 	}
 
 	public boolean checkDuplicateEmail(String email, Integer userId) {
-	LOGGER.debug("Entry: checkDuplicateEmail :: OrganizationUserServiceImpl");
+		LOGGER.debug("Entry: checkDuplicateEmail :: OrganizationUserServiceImpl");
 		boolean valid = false;
 		MstUser user = null;
 		if (Objects.nonNull(userId)) {
@@ -319,5 +243,4 @@ public class OrganizationUserServiceImpl implements OrganizationUserService {
 		LOGGER.debug("Entry: checkDuplicateEmail :: OrganizationUserServiceImpl");
 		return valid;
 	}
-
 }

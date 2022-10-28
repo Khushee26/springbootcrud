@@ -27,18 +27,19 @@ public class OrganizationController {
 	private OrganizationService organizationService;
 	@Autowired
 	OrganizationRepository organizationRepository;
-	
+
 	@PostMapping("save")
 	private BaseResponse saveOrganizationData(@RequestBody OrganizationRequest organizationRequest) {
 		organizationService.saveOrganizationData(organizationRequest, organizationRequest.getOrganizationCountryId());
 		BaseResponse baseResponse = new BaseResponse();
 		baseResponse.setStatus(StatusEnum.SUCCESS);
-		baseResponse.setMessage( "Organization's data saved successfully ");
+		baseResponse.setMessage("Organization's data saved successfully ");
 		return baseResponse;
 	}
-	
-	@PostMapping("/update/{organizationId}")	
-	private BaseResponse updateOrganizationData(@RequestBody OrganizationRequest organizationRequest,@PathVariable("organizationId") int organizationId) {	
+
+	@PostMapping("/update/{organizationId}")
+	private BaseResponse updateOrganizationData(@RequestBody OrganizationRequest organizationRequest,
+			@PathVariable("organizationId") int organizationId) {
 		return organizationService.updateOrganizaitonData(organizationRequest, organizationId);
 	}
 
@@ -53,17 +54,17 @@ public class OrganizationController {
 		OrganizationResponse organizationResponse = null;
 		try {
 			organizationResponse = new OrganizationResponse();
-			organizationResponse = organizationService.getOrganizationDataById(organizationId);				
+			organizationResponse = organizationService.getOrganizationDataById(organizationId);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		return ResponseEntity.status(HttpStatus.OK).body(organizationResponse);
 	}
-	
-	@GetMapping ("/getList")
+
+	@GetMapping("/getList")
 	private ResponseEntity<?> getOrganizationInList() {
 		OrganizationResponse organizationResponse = organizationService.getOrganizationInList();
 		return ResponseEntity.status(HttpStatus.OK).body(organizationResponse);
 	}
-	
+
 }

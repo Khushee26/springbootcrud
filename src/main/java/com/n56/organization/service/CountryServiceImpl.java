@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
+import javax.validation.Valid;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -28,93 +30,105 @@ public class CountryServiceImpl implements CountryService {
 	CountryRepository countryRepository;
 
 	@Override
-	public BaseResponse saveCountryData(CountryRequest countryRequest, Integer countryId) {
-		LOGGER.info("Entry: saveCountryData :: CountryServiceImpl");
-		Country country = null;
+	public BaseResponse saveCountryData(@Valid CountryRequest countryRequest, Integer countryId) {
 		BaseResponse baseResponse = null;
-		if (countryId == null) {
+		if(Objects.nonNull(countryRequest)) {
+			LOGGER.info("Entry: saveCountryData :: CountryServiceImpl");
+			Country country = null;
+			if (countryId == null) {
+				if (!checkDuplicateData(countryRequest.getCountryName(), countryId)) {
+					throw new OrganizationDuplicationDataException(StatusEnum.NOT_FOUND, "Country Name Already Exists");
+				}
+				else if (!countryCode(countryRequest.getCountryCode(), countryId)) {
+					throw new OrganizationDuplicationDataException(StatusEnum.NOT_FOUND, "Country Code Already Exists");
+				}
+				country = new Country();
+				country.setCreatedBy(1);
+				country.setCountryName(countryRequest.getCountryName());
+				country.setCountryCode(countryRequest.getCountryCode());
+				baseResponse = new BaseResponse();
+				baseResponse.setMessage("Country data saved successfully");
+				baseResponse.setStatus(StatusEnum.SUCCESS);
+				countryRepository.save(country);
+			}
+		} else {
+			throw new OrganizationNotFoundException(StatusEnum.NOT_FOUND, " Country Does not Exists");
+		}
+		return baseResponse;
+	}
 
+	@Override
+	public BaseResponse updateCountryData(@Valid CountryRequest countryRequest, Integer countryId) {
+	LOGGER.info("Entry: updateCountryData :: CountryServiceImpl");
+	BaseResponse baseResponse = null;
+		if(Objects.nonNull(countryRequest) && Objects.nonNull(countryId)) {
+			Country country = null;
 			if (!checkDuplicateData(countryRequest.getCountryName(), countryId)) {
 				throw new OrganizationDuplicationDataException(StatusEnum.NOT_FOUND, "Country Name Already Exists");
 			}
-
 			else if (!countryCode(countryRequest.getCountryCode(), countryId)) {
 				throw new OrganizationDuplicationDataException(StatusEnum.NOT_FOUND, "Country Code Already Exists");
 			}
-
-			country = new Country();
-			country.setCreatedBy(1);
-			country.setCountryName(countryRequest.getCountryName());
-			country.setCountryCode(countryRequest.getCountryCode());
-			baseResponse = new BaseResponse();
-			baseResponse.setMessage("Country data saved successfully");
-			baseResponse.setStatus(StatusEnum.SUCCESS);
-			countryRepository.save(country);
-		}
-		return baseResponse;
-	}
-
-	@Override
-	public BaseResponse updateCountryData(CountryRequest countryRequest, Integer countryId) {
-		Country country = null;
-		BaseResponse baseResponse = null;
-		if (!checkDuplicateData(countryRequest.getCountryName(), countryId)) {
-			throw new OrganizationDuplicationDataException(StatusEnum.NOT_FOUND, "Country Name Already Exists");
-		}
-
-		else if (!countryCode(countryRequest.getCountryCode(), countryId)) {
-			throw new OrganizationDuplicationDataException(StatusEnum.NOT_FOUND, "Country Code Already Exists");
-		}
-
-		country = findCountryById(countryId);
-		if (Objects.nonNull(country)) {
-			country.setModifiedBy(1);
-			country.setCountryName(countryRequest.getCountryName());
-			country.setCountryCode(countryRequest.getCountryCode());
-			baseResponse = new BaseResponse();
-			baseResponse.setMessage("Country updated successfully");
-			baseResponse.setStatus(StatusEnum.SUCCESS);
-			countryRepository.save(country);
+			country = findCountryById(countryId);
+			if (Objects.nonNull(country)) {
+				country.setModifiedBy(1);
+				country.setCountryName(countryRequest.getCountryName());
+				country.setCountryCode(countryRequest.getCountryCode());
+				baseResponse = new BaseResponse();
+				baseResponse.setMessage("Country updated successfully");
+				baseResponse.setStatus(StatusEnum.SUCCESS);
+				countryRepository.save(country);
+			} else {
+				throw new OrganizationNotFoundException(StatusEnum.NOT_FOUND, "Country ID Not Found");
+			}
 		} else {
-			throw new OrganizationNotFoundException(StatusEnum.NOT_FOUND, "Country ID Not Found");
-		}
+			throw new OrganizationNotFoundException(StatusEnum.NOT_FOUND, "Countryrequst and id null in update organization data");
+		}	
 		return baseResponse;
 	}
 
 	@Override
-	public BaseResponse deleteCountryData(Integer countryId) {
+	public BaseResponse deleteCountryData(@Valid Integer countryId) {
 		LOGGER.info("Entry: findCountryById :: CountryServiceImpl");
-		BaseResponse baseResponse = null;
-		Country country = findCountryById(countryId);
-		if (Objects.nonNull(country)) {
-			countryRepository.delete(country);
-			baseResponse = new BaseResponse();
-			baseResponse.setMessage("Country Deleted successfully");
-			baseResponse.setStatus(StatusEnum.SUCCESS);
-		} else {
-			throw new OrganizationNotFoundException(StatusEnum.NOT_FOUND, "Country ID Not Found");
-		}
+		if (Objects.nonNull(countryId)) {
+			BaseResponse baseResponse = null;
+			Country country = findCountryById(countryId);
+			if (Objects.nonNull(country)) {
+				countryRepository.delete(country);
+				baseResponse = new BaseResponse();
+				baseResponse.setMessage("Country Deleted successfully");
+				baseResponse.setStatus(StatusEnum.SUCCESS);
+			} else {
+				throw new OrganizationNotFoundException(StatusEnum.NOT_FOUND, "Country ID Not Found");
+			}
 		return baseResponse;
-	}
-
-	@Override
-	public Country findCountryById(Integer countryId) {
-		LOGGER.info("Entry: findCountryById :: CountryServiceImpl");
-		Optional<Country> countryOptionalData = countryRepository.findById(countryId);
-		Country country = null;
-		if (countryOptionalData.isPresent()) {
-			country = countryOptionalData.get();
 		} else {
-			throw new OrganizationNotFoundException(StatusEnum.NOT_FOUND, "Country Does Not Exist");
-
+			throw new OrganizationNotFoundException(StatusEnum.NOT_FOUND, "Country data not Exists");
 		}
-		LOGGER.info("Exit: findCountryById :: CountryServiceImpl");
-		return country;
 	}
 
 	@Override
-	public CountryResponse getCountryDataById(Integer countryId) {
+	public Country findCountryById(@Valid Integer countryId) {
+		LOGGER.info("Entry: findCountryById :: CountryServiceImpl");
+		if(Objects.nonNull(countryId)) {
+			Optional<Country> countryOptionalData = countryRepository.findById(countryId);
+			Country country = null;
+			if (countryOptionalData.isPresent()) {
+				country = countryOptionalData.get();
+			} else {
+				throw new OrganizationNotFoundException(StatusEnum.ID_NOT_EXISTS, "Country Id Does Not Exist");
+			}
+			LOGGER.info("Exit: findCountryById :: CountryServiceImpl");
+			return country;
+		} else {
+			throw new OrganizationNotFoundException(StatusEnum.NOT_FOUND, "Country data not Exists");
+		}
+	}
+
+	@Override
+	public CountryResponse getCountryDataById(@Valid Integer countryId) {
 		LOGGER.info("Entry: getCountryDataById :: CountryServiceImpl");
+		if(Objects.nonNull(countryId)) {
 		Country country = null;
 		CountryResponse countryResponse = new CountryResponse();
 		List<CountryCustomResponse> countryResponseList = new ArrayList<>();
@@ -124,6 +138,9 @@ public class CountryServiceImpl implements CountryService {
 		countryResponse.setMessage("Country Data Fetched Successfully.");
 		countryResponse.setStatus(StatusEnum.SUCCESS);
 		return countryResponse;
+		} else {
+			throw new OrganizationNotFoundException(StatusEnum.NOT_FOUND, "Country data not Exists");
+		}
 	}
 
 	@Override
@@ -135,40 +152,47 @@ public class CountryServiceImpl implements CountryService {
 		for (Country country : countryList) {
 			countryResponseList.add(getCountryDataInCustom(country));
 		}
-
 		countryResponse.setCountryCustomResponseList(countryResponseList);
 		countryResponse.setStatus(StatusEnum.SUCCESS);
 		countryResponse.setMessage("Country List Fetched Successfully.");
-
 		return countryResponse;
 	}
 
-	public CountryCustomResponse getCountryDataInCustom(Country country) {
+	public CountryCustomResponse getCountryDataInCustom(@Valid Country country) {
 		LOGGER.info("Entry: getCountryDataById :: CountryServiceImpl");
+		if(Objects.nonNull(country)) {
+		} else {
+			throw new OrganizationNotFoundException(StatusEnum.NOT_FOUND, "Country Data Not Exists");
+		}
 		CountryCustomResponse countryCustomResponse = new CountryCustomResponse();
 		countryCustomResponse.setCountryName(country.getCountryName());
 		countryCustomResponse.setCountryCode(country.getCountryCode());
 		return countryCustomResponse;
 	}
 
-	public boolean checkDuplicateData(String countryName, Integer countryId) {
+	public boolean checkDuplicateData(@Valid String countryName, Integer countryId) {
 		LOGGER.info("Entry: checkDuplicateData :: CountryServiceImpl");
-		boolean valid = false;
-		Country country = null;
-		if (Objects.nonNull(countryId)) { // edit
-			country = countryRepository.findByCountryNameAndCountryIdNot(countryName, countryId);
-		} else { // save
-			country = countryRepository.findByCountryName(countryName);
+		if(Objects.nonNull(countryName)) {
+			boolean valid = false;
+			Country country = null;
+			if (Objects.nonNull(countryId)) { // edit
+				country = countryRepository.findByCountryNameAndCountryIdNot(countryName, countryId);
+			} else { // save
+				country = countryRepository.findByCountryName(countryName);
+			}
+			if (Objects.isNull(country)) {
+				valid = true;
+			}
+			LOGGER.info("Entry: checkDuplicateData :: CountryServiceImpl");
+			return valid;
+		} else {
+			throw new OrganizationNotFoundException(StatusEnum.NOT_FOUND, "Country data not Exists");
 		}
-		if (Objects.isNull(country)) {
-			valid = true;
-		}
-		LOGGER.info("Entry: checkDuplicateData :: CountryServiceImpl");
-		return valid;
 	}
 
-	public boolean countryCode(String countryCode, Integer countryId) {
+	public boolean countryCode(@Valid String countryCode, Integer countryId) {
 		LOGGER.info("Entry: countryCode :: CountryServiceImpl");
+		if(Objects.nonNull(countryCode)) {
 		boolean valid = false;
 		Country country = null;
 		if (Objects.nonNull(countryId)) { // edit
@@ -181,6 +205,8 @@ public class CountryServiceImpl implements CountryService {
 		}
 		LOGGER.info("Entry: countryCode :: CountryServiceImpl");
 		return valid;
+		} else {
+			throw new OrganizationNotFoundException(StatusEnum.NOT_FOUND, "Country data not Exists");
+		}
 	}
-
 }
